@@ -4,7 +4,7 @@ const STATIC_ASSETS = [
     '/index.html',
     '/manifest.webmanifest',
     '/icons/people.png',
-    '/assets/index-C_vh-Usw.js',
+    '/assets/index-DQ0J3-33.js',
     '/assets/index-thZpBOrY.css',
 ];
 
