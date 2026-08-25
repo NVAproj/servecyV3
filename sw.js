@@ -4,9 +4,8 @@ const STATIC_ASSETS = [
     '/index.html',
     '/manifest.webmanifest',
     '/icons/people.png',
-    // Vite собирает файлы в папку assets
-    '/assets/index.js',      // или другой хеш-файл
-    '/assets/index.css',     // если есть CSS
+    '/assets/index-C_vh-Usw.js',
+    '/assets/index-thZpBOrY.css',
 ];
 
 // Установка Service Worker
