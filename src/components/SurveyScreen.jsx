@@ -12,6 +12,12 @@ export default function SurveyScreen({ onAdminClick, onBack }) {
     const { continueSession } = useTimer();
     const [localError, setLocalError] = useState(null);
 
+    // ✅ Добавляем функцию очистки с возвратом
+    const handleClearAndBack = async () => {
+        await clearSession();
+        if (onBack) onBack();
+    };
+
     // Обработка ошибок
     useEffect(() => {
         if (state.error) {
@@ -83,7 +89,7 @@ export default function SurveyScreen({ onAdminClick, onBack }) {
         );
     }
 
-    // ✅ Экран успеха - передаём onBack для автоматического возврата
+    // ✅ Экран успеха
     if (state.showSuccess) {
         return <SuccessScreen onBack={onBack} autoRedirect={true} redirectDelay={3000} />;
     }
@@ -125,7 +131,6 @@ export default function SurveyScreen({ onAdminClick, onBack }) {
     // Обработчик отправки
     const handleSubmit = async () => {
         try {
-            // Передаём onBack как колбэк успешной отправки
             await submitSurvey(onBack);
         } catch (error) {
             console.error('Submit error:', error);
@@ -136,12 +141,12 @@ export default function SurveyScreen({ onAdminClick, onBack }) {
     return (
         <div className="survey-screen">
             <header className="survey-header">
-
-                {onAdminClick && (
+                {/* ✅ Изменено: onBack вместо onAdminClick */}
+                {onBack && (
                     <button
                         className="backButton"
                         onClick={onBack}
-                        title="Назад"
+                        title="Назад на главную"
                     >
                         ◀ назад
                     </button>
@@ -206,10 +211,11 @@ export default function SurveyScreen({ onAdminClick, onBack }) {
                 </div>
             )}
 
+            {/* ✅ Изменено: handleClearAndBack вместо clearSession */}
             {state.showWarning && (
                 <TimerDialog
                     onContinue={continueSession}
-                    onClear={clearSession}
+                    onClear={handleClearAndBack}
                 />
             )}
         </div>

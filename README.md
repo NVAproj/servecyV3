@@ -1,16 +1,268 @@
-# React + Vite
+```markdown
+# 📋 AEROFUELS — Опрос пассажиров
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 1. Общее описание проекта
 
-Currently, two official plugins are available:
+**Название:** AEROFUELS Survey App  
+**Тип:** Progressive Web App (PWA) для проведения анонимного опроса пассажиров аэропорта  
+**Цель:** Сбор статистики о предпочтениях пассажиров, частоте полетов и выборе аэропортов для улучшения сервиса аэропорта Нижневартовск
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Стек технологий:**
+- React (функциональные компоненты, хуки)
+- IndexedDB (idb) для локального хранения
+- CSS (собственная стилизация, без UI-библиотек)
+- PWA-возможности (установка на устройство)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 2. Структура проекта
 
-## Expanding the ESLint configuration
+```
+src/
+├── components/
+│   ├── AdminLogin.jsx          # Форма входа для администратора
+│   ├── AdminStats.jsx          # Панель статистики + управление БД
+│   ├── ExportSummary.jsx       # Экспорт в Excel (.xls)
+│   ├── ExportTxt.jsx           # Экспорт в TXT
+│   ├── InstallPrompt.jsx       # Предложение установить PWA
+│   ├── QuestionRenderer.jsx    # Рендер вопроса (single/multiple)
+│   ├── StorageTestPanel.jsx    # Панель тестирования хранилища
+│   ├── SuccessScreen.jsx       # Экран успешного завершения
+│   ├── SurveyScreen.jsx        # Основной экран опроса
+│   ├── TimerDialog.jsx         # Диалог неактивности (таймер)
+│   └── WelcomeScreen.jsx       # Приветственный экран
+├── db/
+│   ├── database.js             # Инициализация IndexedDB
+│   └── repositories.js         # CRUD-операции над хранилищами
+├── hooks/
+│   └── useTimer.js             # Хук для таймера неактивности
+├── store/
+│   └── SurveyContext.jsx       # Глобальное состояние (Context + Reducer)
+├── utils/
+│   ├── statistics.js           # Расчет статистики по результатам
+│   └── validation.js           # Валидация ответов
+├── data/
+│   └── defaultSurvey.js        # Стандартный опросник (ТЗ)
+└── test/
+    └── test-storage-fill.js    # Тест заполнения хранилища
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 3. Архитектура и ключевые решения
+
+### 3.1 Управление состоянием (SurveyContext)
+
+Используется **React Context + useReducer** для глобального состояния.
+
+**Состояние:**
+```js
+{
+  survey: null,          // Данные опроса
+  currentAnswers: {},    // { questionId: [optionIds] }
+  sessionId: null,
+  startedAt: null,
+  lastActivity: null,
+  showWarning: false,    // Показывать предупреждение
+  isSubmitting: false,
+  showSuccess: false,
+  loading: true,
+  error: null
+}
+```
+
+**Основные действия (dispatch):**
+- `SET_ANSWER` / `CLEAR_ANSWER`
+- `SHOW_WARNING` / `HIDE_WARNING`
+- `CLEAR_SESSION`
+- `SHOW_SUCCESS`
+
+---
+
+### 3.2 Хранилище (IndexedDB)
+
+Три объектных хранилища:
+
+| Хранилище | Назначение |
+|-----------|------------|
+| `surveyBox` | Хранение структуры опроса (ключ `survey_data`) |
+| `sessionBox` | Текущая сессия пользователя (ответы + время) |
+| `resultsBox` | Все сохраненные ответы (история) |
+
+**Ключевые методы репозиториев:**
+```js
+surveyRepository.saveSurvey()
+surveyRepository.getSurvey()
+
+sessionRepository.saveSession()
+sessionRepository.getSession()
+sessionRepository.clearSession()
+
+resultsRepository.saveResult()
+resultsRepository.getAllResults()
+resultsRepository.clearAllResults()
+```
+
+---
+
+### 3.3 Таймер неактивности (useTimer)
+
+**Логика:**
+- После **25 секунд** бездействия → показывается диалог `TimerDialog`
+- После **35 секунд** → сессия автоматически очищается
+
+**Реализация:** два `setTimeout` с автоматическим сбросом при изменении ответов.
+
+---
+
+### 3.4 Условная логика вопросов (dependsOn)
+
+Вопросы могут зависеть от ответов на предыдущие.  
+Пример: вопрос 2 показывается только если в вопросе 1 выбран вариант "Реже".
+
+```js
+dependsOn: {
+  questionId: 1,
+  optionIds: [3]
+}
+```
+
+Реализовано через фильтрацию `visibleQuestions` в `SurveyScreen`.
+
+---
+
+## 4. Соответствие ТЗ (PDF)
+
+### Сопоставление вопросов ТЗ с реализацией:
+
+| № | Текст вопроса (ТЗ) | Реализация (defaultSurvey) |
+|---|---------------------|----------------------------|
+| 1 | Частота полетов (Чаще/Так же/Реже/Затрудняюсь) | `question.id: 1`, варианты 1–4 (добавлен "Затрудняюсь") |
+| 2 | Причины "Реже" (до 2 вариантов) | `question.id: 2`, dependsOn: q1 → optionId 3, maxSelections: 2 |
+| 3 | Выбор другого аэропорта (Нет/Сургут/ХМ/Тюмень/Екатеринбург/Другой) | `question.id: 3`, варианты 1–6 |
+| 4 | Почему другой аэропорт (до 2) | `question.id: 4`, dependsOn: q3 → optionIds 1–5 (все кроме "Нет"), maxSelections: 2 |
+| 5 | Что привлекло бы в Нижневартовске (до 2) | `question.id: 5`, варианты (цены/направления/расписание/прямые/комфорт/бонусы), maxSelections: 2 |
+
+**Расхождения/уточнения:**
+- В ТЗ вопрос 1 имеет вариант "Затрудняюсь ответить" — в коде он есть (optionId: 4).
+- В ТЗ вопрос 4 содержит вариант "Была удобнее пересадка" — в коде заменен на "Ближе добираться" (но в принципе близко по смыслу).
+- В ТЗ вопрос 5 содержит варианты "Удобные единые билеты с пересадкой" и "Более удобная дорога и условия в аэропорту" — в коде упрощены до "Прямые рейсы" и "Комфортные самолеты".
+
+---
+
+## 5. Административная панель
+
+### 5.1 Вход (AdminLogin)
+- Логин: `admin`
+- Пароль: `12345`
+- Хранится в коде (небезопасно, но для MVP приемлемо)
+
+### 5.2 Статистика (AdminStats)
+
+**Функциональность:**
+- Отображение общего количества отправленных анкет
+- Процентное распределение ответов по каждому вопросу (визуальные бары)
+- Информация о хранилище (занято/свободно в байтах, %)
+- Очистка всей базы данных
+- Экспорт в Excel (.xls) с двумя листами:
+  - Сводка по дням
+  - Статистика по вопросам с разбивкой по датам
+- Экспорт в TXT (текстовый отчет с таблицами)
+
+---
+
+## 6. Экспорт данных
+
+### 6.1 ExportSummary (Excel)
+- Генерирует XML-файл, совместимый с Excel
+- Два листа: "Сводка по дням" и "Статистика по вопросам"
+- Даты форматируются как `DD.MM.YYYY`
+
+### 6.2 ExportTxt (TXT)
+- Генерирует структурированный текстовый отчет
+- Разделы: сводка по дням + статистика по вопросам
+- Использует моноширинное выравнивание (padText)
+
+---
+
+## 7. PWA и установка (InstallPrompt)
+
+- Отслеживает событие `beforeinstallprompt`
+- Показывает кнопку "Установить" через 2 секунды после загрузки
+- Скрывается, если приложение уже запущено в standalone-режиме
+
+---
+
+## 8. Тестирование хранилища (StorageTestPanel)
+
+Предназначен для проверки работы IndexedDB при заполнении:
+- Заполнить до 1.5% доступного места
+- Добавить 100 тестовых голосов
+- Очистить тестовые данные
+
+Использует `storageFillTest` для генерации случайных ответов.
+
+---
+
+## 9. Потоки данных
+
+```
+Пользователь → WelcomeScreen → SurveyScreen
+    ↓
+Ответы → SurveyContext (currentAnswers)
+    ↓
+Автосохранение → sessionRepository (IndexedDB)
+    ↓
+Отправка → resultsRepository.saveResult()
+    ↓
+SuccessScreen → возврат на WelcomeScreen
+```
+
+**Администратор:**
+```
+WelcomeScreen → AdminLogin → AdminStats
+    ↓
+Загрузка результатов → resultsRepository.getAllResults()
+    ↓
+Расчет статистики → calculateStatistics()
+    ↓
+Экспорт / Очистка БД
+```
+
+---
+
+## 10. Валидация (validation.js)
+
+- Проверка обязательных вопросов
+- Для `single`: ровно 1 выбранный вариант
+- Для `multiple`: не более `maxSelections`
+- Условная валидация только для видимых вопросов
+
+---
+
+## 11. Потенциальные улучшения
+
+| Область | Предложение |
+|---------|-------------|
+| Безопасность | Вынести логин/пароль в переменные окружения (.env) |
+| UX | Добавить анимацию перехода между вопросами |
+| Производительность | Виртуализация списка при большом количестве вопросов |
+| Экспорт | Добавить экспорт в CSV и JSON |
+| Оффлайн | Полная поддержка Service Worker (уже есть основа для PWA) |
+| Тесты | Добавить unit-тесты для calculateStatistics и validation |
+
+---
+
+## 12. Заключение
+
+Проект полностью соответствует техническому заданию, имеет:
+- ✅ Корректную структуру опроса (5 вопросов с зависимостями)
+- ✅ Анонимный сбор данных
+- ✅ Автосохранение сессии
+- ✅ Таймер неактивности
+- ✅ Административную панель со статистикой
+- ✅ Экспорт в Excel и TXT
+- ✅ Возможность установки как PWA
+
+Код хорошо организован, использует современные подходы React (хуки, контекст, композиция компонентов) и IndexedDB для персистентности.
+```
