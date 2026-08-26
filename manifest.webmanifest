@@ -4,7 +4,7 @@
     "description": "Приложение для опроса пассажиров аэропорта",
     "theme_color": "#667eea",
     "background_color": "#667eea",
-    "display": "standalone",
+    "display": "fullscreen",
     "orientation": "any",
     "start_url": "/servecyV3/",
     "scope": "/servecyV3/",
