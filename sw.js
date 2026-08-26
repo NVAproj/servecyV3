@@ -4,8 +4,8 @@ const STATIC_ASSETS = [
     '/index.html',
     '/manifest.webmanifest',
     '/icons/people.png',
-    '/assets/index-Chd_-J7B.js',
-    '/assets/index-CEKp8Ps4.css',
+    '/assets/index-B4yux28g.js',
+    '/assets/index-H804RgBe.css',
 ];
 
 // Установка Service Worker
@@ -19,7 +19,6 @@ self.addEventListener('install', (event) => {
             })
             .catch((error) => {
                 console.error('[SW] Ошибка кэширования:', error);
-                // Продолжаем установку даже если что-то не закэшировалось
             })
             .then(() => {
                 return self.skipWaiting();
@@ -27,7 +26,7 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Активация Service Worker
+
 self.addEventListener('activate', (event) => {
     console.log('[SW] Активация...');
     event.waitUntil(
@@ -49,14 +48,11 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Стратегия: Сначала кэш, потом сеть (Cache First)
 self.addEventListener('fetch', (event) => {
-    // Пропускаем не-GET запросы
     if (event.request.method !== 'GET') return;
 
-    // Пропускаем запросы к API
     if (event.request.url.includes('/api/')) {
-        return; // Пусть обрабатываются браузером
+        return;
     }
 
     event.respondWith(
@@ -66,15 +62,12 @@ self.addEventListener('fetch', (event) => {
                     return cachedResponse;
                 }
 
-                // Если нет в кэше, делаем запрос в сеть
                 return fetch(event.request)
                     .then((response) => {
-                        // Проверяем, что ответ валидный
                         if (!response || response.status !== 200 || response.type === 'opaque') {
                             return response;
                         }
 
-                        // Кэшируем только GET-запросы к статическим ресурсам
                         const url = new URL(event.request.url);
                         if (url.origin === location.origin) {
                             const responseClone = response.clone();
@@ -86,12 +79,10 @@ self.addEventListener('fetch', (event) => {
                         return response;
                     })
                     .catch(() => {
-                        // Если офлайн и запрос на страницу
                         if (event.request.mode === 'navigate') {
                             return caches.match('/index.html');
                         }
 
-                        // Для других ресурсов возвращаем ошибку
                         return new Response('Offline', {
                             status: 408,
                             statusText: 'Offline',
