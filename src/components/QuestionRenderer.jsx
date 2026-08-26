@@ -1,6 +1,6 @@
 import { useSurvey } from '../store/SurveyContext';
 
-export default function QuestionRenderer({ question, selectedOptions }) {
+export default function QuestionRenderer({ question, selectedOptions, questionNumber, totalQuestions }) {
     const { setAnswer } = useSurvey();
 
     const handleSingleSelect = (optionId) => {
@@ -28,7 +28,10 @@ export default function QuestionRenderer({ question, selectedOptions }) {
     return (
         <div className="question-card">
             <div className="question-header">
-                <h3>Вопрос {question.id}</h3>
+                <div className="question-number-badge">
+                    <span className="question-number">Вопрос {questionNumber}</span>
+                    <span className="question-total"> из {totalQuestions}</span>
+                </div>
                 <p className="question-text">{question.text}</p>
                 {question.type === 'multiple' && question.maxSelections && (
                     <span className="hint">Выберите не более {question.maxSelections} вариантов</span>

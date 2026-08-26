@@ -1,5 +1,6 @@
 export const defaultSurvey = {
-    title: "Опрос пассажиров аэропорта",
+    title: "Опрос пассажиров",
+    img: './icons/logo.png',
     description: "Пожалуйста, ответьте на несколько вопросов",
     questions: [
         {

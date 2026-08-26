@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { SurveyProvider } from './store/SurveyContext';
+import WelcomeScreen from './components/WelcomeScreen';
 import SurveyScreen from './components/SurveyScreen';
 import AdminLogin from './components/AdminLogin';
 import AdminStats from './components/AdminStats';
 
-function App() {
-  const [currentView, setCurrentView] = useState('survey');
+const App = () => {
+  const [currentView, setCurrentView] = useState('welcome'); // 'welcome' | 'survey' | 'admin-login' | 'admin-stats'
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -20,19 +20,11 @@ function App() {
     } else {
       setIsReady(true);
     }
-
-    // Отслеживаем онлайн/офлайн
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
   }, []);
+
+  const handleStartSurvey = () => {
+    setCurrentView('survey');
+  };
 
   const handleAdminLogin = (success) => {
     if (success) {
@@ -41,36 +33,63 @@ function App() {
     }
   };
 
-  return (
-    <SurveyProvider>
+  const handleAdminClick = () => {
+    setCurrentView('admin-login');
+  };
+
+  const handleBack = () => {
+    setCurrentView('welcome');
+  };
+
+  const handleBackFromAdmin = () => {
+    setCurrentView('welcome');
+  };
+
+  // Если не готово, показываем загрузку
+  if (!isReady) {
+    return (
       <div className="app">
-        {!isOnline && (
-          <div className="offline-banner">
-            <span>📡</span>
-            <div>
-              <strong>Офлайн-режим</strong>
-              <p>Приложение работает офлайн</p>
-            </div>
-          </div>
-        )}
+        <div className="loading">Загрузка приложения...</div>
+      </div>
+    );
+  }
 
-        {currentView === 'survey' && (
-          <SurveyScreen onAdminClick={() => setCurrentView('admin-login')} />
-        )}
-
-        {currentView === 'admin-login' && (
-          <AdminLogin
-            onLogin={handleAdminLogin}
-            onBack={() => setCurrentView('survey')}
+  return (
+    <SurveyProvider> {/* 👈 Провайдер должен оборачивать всё приложение */}
+      <div className="app">
+        {/* Приветственный экран */}
+        {currentView === 'welcome' && (
+          <WelcomeScreen
+            onStartSurvey={handleStartSurvey}
+            onAdminLogin={handleAdminClick}
           />
         )}
 
+        {/* Экран опроса */}
+        {currentView === 'survey' && (
+          <SurveyScreen
+            onAdminClick={handleAdminClick}
+            onBack={handleBack}
+          />
+        )}
+
+        {/* Экран входа администратора */}
+        {currentView === 'admin-login' && (
+          <AdminLogin
+            onLogin={handleAdminLogin}
+            onBack={handleBackFromAdmin}
+          />
+        )}
+
+        {/* Экран статистики администратора */}
         {currentView === 'admin-stats' && isAdmin && (
-          <AdminStats onBack={() => setCurrentView('survey')} />
+          <AdminStats
+            onBack={handleBackFromAdmin}
+          />
         )}
       </div>
     </SurveyProvider>
   );
-}
+};
 
 export default App;

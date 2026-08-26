@@ -7,19 +7,16 @@ export function useTimer() {
     const clearTimerRef = useRef(null);
 
     const resetTimers = useCallback(() => {
-        // Очищаем существующие таймеры
         if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
         if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
 
-        // Не запускаем таймеры, если нет активных ответов
         if (Object.keys(state.currentAnswers).length === 0) return;
 
-        // Таймер предупреждения (25 секунд)
         warningTimerRef.current = setTimeout(() => {
             dispatch({ type: 'SHOW_WARNING' });
         }, 25000);
 
-        // Таймер очистки (35 секунд = 25 + 10)
+
         clearTimerRef.current = setTimeout(() => {
             clearSession();
         }, 35000);

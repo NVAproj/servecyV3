@@ -89,11 +89,9 @@ function surveyReducer(state, action) {
 export function SurveyProvider({ children }) {
     const [state, dispatch] = useReducer(surveyReducer, initialState);
 
-    // Инициализация приложения
     useEffect(() => {
         async function initialize() {
             try {
-                // Загружаем опрос
                 let survey = await surveyRepository.getSurvey();
                 if (!survey) {
                     await surveyRepository.saveSurvey(defaultSurvey);
@@ -101,14 +99,12 @@ export function SurveyProvider({ children }) {
                 }
                 dispatch({ type: 'LOAD_SURVEY', payload: survey });
 
-                // Проверяем сессию
                 const session = await sessionRepository.getSession();
                 if (session) {
                     const lastActivity = new Date(session.lastActivity);
                     const now = new Date();
                     const diffSeconds = (now - lastActivity) / 1000;
 
-                    // Если сессия не просрочена (> 35 сек)
                     if (diffSeconds <= 35) {
                         dispatch({ type: 'LOAD_SESSION', payload: session });
                     } else {
@@ -126,7 +122,6 @@ export function SurveyProvider({ children }) {
         initialize();
     }, []);
 
-    // Сохранение сессии при изменении ответов
     useEffect(() => {
         if (state.currentAnswers && Object.keys(state.currentAnswers).length > 0) {
             const session = {
@@ -158,26 +153,26 @@ export function SurveyProvider({ children }) {
         dispatch({ type: 'CLEAR_SESSION' });
     };
 
-    const submitSurvey = async () => {
+    const submitSurvey = async (onSuccess) => {
         dispatch({ type: 'SET_SUBMITTING', payload: true });
 
         try {
-            // Формируем массив ответов для сохранения
             const answersArray = Object.entries(state.currentAnswers).map(([questionId, optionIds]) => ({
                 q: parseInt(questionId),
                 a: optionIds,
             }));
 
-            // Сохраняем результат
             await resultsRepository.saveResult(answersArray);
-
-            // Очищаем сессию
             await clearSession();
 
-            // Показываем экран успеха
             dispatch({ type: 'SHOW_SUCCESS' });
 
-            // Скрываем через 3 секунды
+            if (onSuccess) {
+                setTimeout(() => {
+                    onSuccess();
+                }, 3000);
+            }
+
             setTimeout(() => {
                 dispatch({ type: 'HIDE_SUCCESS' });
             }, 3000);

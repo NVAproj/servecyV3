@@ -1,6 +1,19 @@
 export function calculateStatistics(results, survey) {
+    // Фильтруем только реальные ответы (не тестовые)
+    const realResults = results.filter(result => {
+        try {
+            const parsed = JSON.parse(result.answersJson);
+            // Проверяем, что это массив с форматом {q, a}
+            return Array.isArray(parsed) && parsed.every(item =>
+                item.q !== undefined && Array.isArray(item.a)
+            );
+        } catch {
+            return false;
+        }
+    });
+
     const stats = {
-        total: results.length,
+        total: realResults.length,
         questions: []
     };
 
@@ -16,12 +29,25 @@ export function calculateStatistics(results, survey) {
         question.options.forEach(option => {
             let count = 0;
 
-            results.forEach(result => {
-                const answers = JSON.parse(result.answersJson);
-                const answer = answers.find(a => a.q === question.id);
+            realResults.forEach(result => {
+                try {
+                    const answers = JSON.parse(result.answersJson);
 
-                if (answer && answer.a.includes(option.id)) {
-                    count++;
+                    if (!Array.isArray(answers)) return;
+
+                    // Ищем ответ на текущий вопрос
+                    const answer = answers.find(a =>
+                        String(a.q) === String(question.id)
+                    );
+
+                    if (answer && Array.isArray(answer.a)) {
+                        // Проверяем, выбран ли текущий вариант
+                        if (answer.a.some(a => String(a) === String(option.id))) {
+                            count++;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Ошибка обработки:', error);
                 }
             });
 

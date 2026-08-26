@@ -5,8 +5,18 @@ export default defineConfig({
   plugins: [
     react()
   ],
+  base: '/servecyV3/',
   server: {
     host: true,
     port: 3000
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    }
   }
 })
