@@ -4,8 +4,8 @@ const STATIC_ASSETS = [
     '/index.html',
     '/manifest.webmanifest',
     '/icons/people.png',
-    '/assets/index-Dnkax-Hg.js',
-    '/assets/index-DreGF5jD.css',
+    '/assets/index-CMqXfWNy.js',
+    '/assets/index-B5ATAUPr.css',
 ];
 
 // Установка Service Worker
